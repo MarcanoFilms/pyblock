@@ -270,7 +270,71 @@
 ## How to execute
 
   - python3 PyBlock.py
-  
+
+## OracleVision Integration (BIP-110 & Mempool Analysis)
+
+PyBLOCK includes a lightweight integration with [OracleVision](https://github.com/MarcanoFilms/oraculovision) for sovereign node operators running **Bitcoin Knots** with **BIP-110** policy enabled. Philosophy: **Don't Trust, Verify** — all analysis runs locally against your node via `bitcoin-cli`.
+
+### Built-in features (Bitcoin → OV. OracleVision)
+
+| Option | What it does |
+|--------|----------------|
+| **BIP-110 Block Scanner** | Scans recent blocks for consensus violations, spam score (0–100), and status (CLEAN / SUSPICIOUS / VIOLATION) |
+| **Mempool Glass** | Categorizes your node's current `getblocktemplate` into economic, consolidation, coinjoin, and spam buckets |
+| **Block Detail View** | Deep-dive into a single block: miner tag, witness %, violation flags, problematic transactions — with drill-down to Transaction Inspector |
+| **Transaction & Address Inspector** | Inspect any txid (flow, fees, BIP-110 flags, spam signals) or address (UTXO balance, mempool exposure) — verified locally |
+| **Launch Full OracleVision** | Opens the standalone Textual TUI if installed (DATUM mining, Ocean panels, live charts, multi-screen navigation) |
+
+### Configuration
+
+Copy the example config and adjust for your node:
+
+```bash
+cp pybitblock/config/oraclevision.conf.example pybitblock/config/oraclevision.conf
+```
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `block_scan_count` | 10 | How many recent blocks to scan |
+| `spam_score_threshold` | 45 | Score above this marks a block as VIOLATION |
+| `bitcoin_datadir` | `""` | Optional `-datadir` for bitcoin-cli |
+| `oraculovision_command` | `oraculovision` | Command to launch the full TUI |
+| `max_vin_lookups` | 4 | Parent transaction RPC lookups to resolve input prevouts in Transaction Inspector |
+| `scantxoutset_timeout` | 90 | Seconds allowed for UTXO scan in Address Inspector |
+| `mempool_scan_limit` | 30 | Max mempool txs scanned for address mempool exposure |
+| `detectors_enabled` | `["builtin"]` | Active BIP-110/spam detector plugins |
+
+Environment overrides: `ORACULOVISION_BLOCK_SCAN_COUNT`, `ORACULOVISION_SPAM_THRESHOLD`, `ORACULOVISION_COMMAND`, `BITCOIN_DATADIR`.
+
+### Full OracleVision TUI (recommended for power users)
+
+The built-in tools cover the essentials. For the complete dashboard — DATUM solo mining panel, Ocean account stats, live mempool charts, and navigable BIP-110 tables — install the standalone project:
+
+```bash
+git clone https://github.com/MarcanoFilms/oraculovision.git
+cd oraculovision
+python -m venv .venv
+source .venv/bin/activate
+pip install -e .
+oraculovision
+```
+
+From PyBLOCK, use **Bitcoin → OV. OracleVision → E. Launch Full OracleVision TUI**.
+
+### Extending detection logic
+
+The analysis engine lives in `pybitblock/oraclevision/` and is intentionally modular:
+
+- `script_parser.py` — BIP-110 size limits and witness/script parsing
+- `detectors/` — pluggable per-transaction rule checks (register new detectors via config)
+- `bip110.py` — per-block aggregation and spam scoring
+- `spam_score.py` — heuristic scoring (community-tunable weights)
+- `mempool_compose.py` — block template categorization
+- `tx_flow.py` / `tx_service.py` — transaction flow parsing and deep inspection
+- `address_service.py` — UTXO balance and mempool exposure for addresses
+
+Pull requests that improve heuristics or add new violation rules are welcome. Add detectors in `oraclevision/detectors/` and keep UI code in `oraclevision/ui.py` separate from detection logic.
+
   
 ## Running PyBLOCK using Docker
 
